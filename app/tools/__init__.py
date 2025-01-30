@@ -262,3 +262,10 @@ def search_files(query: str) -> list[dict[str, str]]:
     :param query: The query to search for files.
     :return: A list of dictionaries containing the file path, size, and modified date."""
     return everything_search_files(query)
+
+
+def check_file_or_folder_existence(target_path: str) -> bool:
+    """Check if a file or folder exists at the specified path
+    :param target_path: Target file or folder path to check
+    """
+    return os.path.exists(target_path)
