@@ -2,11 +2,14 @@ import json
 import datetime
 import requests
 import os
+import subprocess
 from dataclasses import dataclass
 from typing import Callable, Any, Optional
 
 import wikipedia
 from duckduckgo_search import DDGS
+
+from .everything import search_files as everything_search_files
 
 
 @dataclass(frozen=True)
@@ -166,3 +169,96 @@ def check_file_existence_bulk(target_paths: list[str]) -> list[bool]:
     :param target_paths: List of target file paths to check
     """
     return {path: check_file_existence(path) for path in target_paths}
+
+
+def create_folder(target_path: str) -> str:
+    """Create a new folder at the specified path
+    :param target_path: Target folder path to create
+    """
+    os.mkdir(target_path)
+    return f"Created folder '{target_path}'"
+
+
+def create_folder_bulk(target_paths: list[str]) -> list[str]:
+    """Create multiple folders at the specified paths
+    :param target_paths: List of target folder paths to create
+    """
+    results: list[str] = []
+    for path in target_paths:
+        result = create_folder(path)
+        results.append(result)
+    return results
+
+
+def get_os_username() -> str:
+    """Returns the current username of the operating system."""
+    return os.getlogin()
+
+
+def execute_shell(command: str) -> str:
+    """Execute a shell command and return the output
+
+    :param command: Shell command to execute
+
+    :return: stdout output of the shell command
+    """
+    try:
+        result = subprocess.run(command, shell=True, text=True, capture_output=True)
+        return result.stdout.strip() or result.stderr.strip() or "OK"
+    except Exception as e:
+        return str(e)
+
+
+def execute_shell_bulk(commands: list[str]) -> dict[str, str]:
+    """Execute a shell command and return the output. Preffered way for executing multiple shell commands.
+
+    :param commands: List of shell commands to execute
+
+    :return: Dictionary of stdout/stderr outputs of the shell commands
+    """
+    results: dict[str, str] = {}
+    for command in commands:
+        try:
+            result = subprocess.run(command, shell=True, text=True, capture_output=True)
+            results[command] = result.stdout.strip() or result.stderr.strip()
+        except Exception as e:
+            results[command] = str(e)
+    return results
+
+
+def download_file(url: str, target_path: str) -> str:
+    """Downloads file from the provided URL to a target path on user's machine
+
+    :param url: target file URL to download from
+    :param target_path: destination file path to download to
+
+    :return: Download result"""
+    try:
+        response = requests.get(url)
+        with open(target_path, "wb") as file:
+            file.write(response.content)
+        return f"Downloaded {url} successfully"
+    except Exception as e:
+        return f"Error while downloading {url}: {e}"
+
+
+def download_file_bulk(urls: list[str], target_paths: list[str]) -> dict[str, str]:
+    """Downloads files from the provided URLs to a target paths on user's machine
+
+    :param urls: target file URLs to download from
+    :param target_path: destination file paths to download to
+
+    :return: Download result for each url"""
+    result: dict[str, str] = {}
+    for idx, url in enumerate(urls):
+        result[url] = download_file(url, target_paths[idx])
+    return result
+
+
+def search_files(query: str) -> list[dict[str, str]]:
+    """Searches for files via \"Everything\" application using the provided query and returns a list of dictionaries containing the file path, size, and modified date.
+    This is a preferred way to search for files quickly and efficiently.
+
+    :param query: The query to search for files.
+    :return: A list of dictionaries containing the file path, size, and modified date."""
+    return everything_search_files(query)
